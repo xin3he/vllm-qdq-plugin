@@ -7,7 +7,14 @@ This implementation is adapted from vLLM's MXFP4 reference test helper
 plugin does not depend on vLLM internals.
 """
 
+import logging
+
 import torch
+
+
+logger = logging.getLogger(__name__)
+
+_log_once = False
 
 BFLOAT16_EXP_BIAS = 127
 BFLOAT16_MANTISSA_BITS = 7
@@ -114,6 +121,17 @@ def mxfp4_qdq(x: torch.Tensor, group_size: int = 32) -> torch.Tensor:
     assert orig_dtype in (torch.float16, torch.bfloat16), (
         f"mxfp4_qdq only supports fp16/bf16 tensors, but got {orig_dtype}"
     )
+
+    global _log_once
+    if not _log_once:
+        logger.warning(
+            "QDQ MXFP4 activation enabled: shape=%s dtype=%s group_size=%d",
+            tuple(x.shape),
+            orig_dtype,
+            group_size,
+        )
+        _log_once = True
+
     m, k = x.shape
 
     # Pad k to multiple of group_size

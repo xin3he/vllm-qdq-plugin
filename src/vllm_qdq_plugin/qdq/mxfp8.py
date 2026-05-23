@@ -6,7 +6,14 @@ Implements the MX specification for MXFP8: E4M3 data format (float8_e4m3fn,
 bias=7, max=448) with per-group E8M0 (power-of-2) scales of group_size elements.
 """
 
+import logging
+
 import torch
+
+
+logger = logging.getLogger(__name__)
+
+_log_once = False
 
 FLOAT8_E8M0_MAX_EXP = 127
 
@@ -90,6 +97,17 @@ def mxfp8_qdq(x: torch.Tensor, group_size: int = 32) -> torch.Tensor:
     assert orig_dtype in (torch.float16, torch.bfloat16), (
         f"mxfp8_qdq only supports fp16/bf16 tensors, but got {orig_dtype}"
     )
+
+    global _log_once
+    if not _log_once:
+        logger.warning(
+            "QDQ MXFP8 activation enabled: shape=%s dtype=%s group_size=%d",
+            tuple(x.shape),
+            orig_dtype,
+            group_size,
+        )
+        _log_once = True
+
     m, k = x.shape
 
     # Pad k to multiple of group_size
